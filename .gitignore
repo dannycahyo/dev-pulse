@@ -1,0 +1,66 @@
+# =============================================================================
+# DevPulse .gitignore
+# =============================================================================
+
+# -- Secrets & credentials ----------------------------------------------------
+.env
+*.json
+keys/
+!dbt_project.yml
+!profiles.yml
+!dbt/models/sources.yml
+
+# -- Java / Gradle ------------------------------------------------------------
+extractor/.gradle/
+extractor/build/
+extractor/out/
+*.class
+*.jar
+*.war
+*.ear
+
+# -- Gradle Wrapper (committed separately if needed) --------------------------
+# Uncomment if you don't want to commit the wrapper
+# extractor/gradle/
+
+# -- dbt ----------------------------------------------------------------------
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# -- Python / dbt virtualenv --------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# -- Apache Airflow -----------------------------------------------------------
+airflow/logs/
+airflow/airflow.cfg
+airflow/webserver_config.py
+airflow/*.pid
+
+# -- Docker -------------------------------------------------------------------
+docker-compose.override.yml
+
+# -- Metabase -----------------------------------------------------------------
+metabase/metabase.db/
+
+# -- IDE files ----------------------------------------------------------------
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+.factorypath
+*.code-workspace
+
+# -- OS files -----------------------------------------------------------------
+.DS_Store
+Thumbs.db

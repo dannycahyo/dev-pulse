@@ -1,0 +1,41 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('GCP_PROJECT_ID') }}"
+    schema: devpulse_raw
+    tables:
+      - name: raw_commits
+        description: "Raw commit data from GitHub API"
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+        loaded_at_field: _ingested_at
+
+      - name: raw_pull_requests
+        description: "Raw pull request data from GitHub API"
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+        loaded_at_field: _ingested_at
+
+      - name: raw_reviews
+        description: "Raw PR review data from GitHub API"
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+        loaded_at_field: _ingested_at
+
+      - name: raw_repositories
+        description: "Raw repository metadata from GitHub API"
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+        loaded_at_field: _ingested_at
+
+      - name: raw_languages
+        description: "Raw language byte counts from GitHub API"
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+        loaded_at_field: _ingested_at
