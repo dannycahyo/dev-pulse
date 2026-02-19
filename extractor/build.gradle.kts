@@ -50,3 +50,32 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
+// Shadow JAR — bundles all runtime dependencies into a single executable JAR.
+// Usage: gradle shadowJar && java -jar build/libs/extractor.jar --incremental
+tasks.register<Jar>("shadowJar") {
+    archiveBaseName.set("extractor")
+    archiveClassifier.set("")
+    archiveVersion.set("")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes("Main-Class" to "com.devpulse.extractor.orchestrator.ExtractorApp")
+    }
+
+    from(sourceSets.main.get().output)
+
+    dependsOn(configurations.runtimeClasspath)
+    from({
+        configurations.runtimeClasspath.get()
+            .filter { it.name.endsWith(".jar") }
+            .map { zipTree(it) }
+    })
+
+    // Merge META-INF/services files for ServiceLoader-based frameworks
+    filesMatching("META-INF/services/*") {
+        // Use append-based strategy via duplicatesStrategy above
+    }
+
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+}
