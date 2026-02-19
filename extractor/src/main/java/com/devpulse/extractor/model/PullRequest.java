@@ -13,7 +13,9 @@ public record PullRequest(
         @JsonProperty("title") String title,
         @JsonProperty("state") String state,
         @JsonProperty("created_at") String createdAt,
+        @JsonProperty("updated_at") String updatedAt,
         @JsonProperty("merged_at") String mergedAt,
+        @JsonProperty("merge_commit_sha") String mergeCommitSha,
         @JsonProperty("user") User user
 ) {
 

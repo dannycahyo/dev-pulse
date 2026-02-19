@@ -12,6 +12,7 @@ public record Review(
         @JsonProperty("id") long id,
         @JsonProperty("state") String state,
         @JsonProperty("submitted_at") String submittedAt,
+        @JsonProperty("body") String body,
         @JsonProperty("user") User user
 ) {
 
