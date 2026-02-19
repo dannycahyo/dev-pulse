@@ -12,7 +12,17 @@ public record Repository(
         @JsonProperty("id") long id,
         @JsonProperty("name") String name,
         @JsonProperty("full_name") String fullName,
+        @JsonProperty("owner") Owner owner,
         @JsonProperty("language") String language,
         @JsonProperty("created_at") String createdAt,
-        @JsonProperty("visibility") String visibility
-) {}
+        @JsonProperty("updated_at") String updatedAt,
+        @JsonProperty("visibility") String visibility,
+        @JsonProperty("fork") boolean fork,
+        @JsonProperty("stargazers_count") long stargazersCount
+) {
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Owner(
+            @JsonProperty("login") String login
+    ) {}
+}
