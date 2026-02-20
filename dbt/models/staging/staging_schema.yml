@@ -1,0 +1,178 @@
+version: 2
+
+models:
+  - name: stg_commits
+    description: "Cleaned and deduplicated commits with time dimension extractions"
+    columns:
+      - name: commit_sha
+        description: "Unique commit SHA hash"
+        tests:
+          - unique
+          - not_null
+      - name: repo_full_name
+        description: "Full repository name (owner/repo)"
+        tests:
+          - not_null
+      - name: author_name
+        description: "Commit author name"
+      - name: author_email
+        description: "Commit author email"
+      - name: authored_at
+        description: "Timestamp when the commit was authored"
+        tests:
+          - not_null
+      - name: commit_message
+        description: "Commit message text"
+      - name: lines_added
+        description: "Number of lines added in this commit"
+      - name: lines_deleted
+        description: "Number of lines deleted in this commit"
+      - name: files_changed
+        description: "Number of files changed in this commit"
+      - name: hour_of_day
+        description: "Hour of day (0-23) extracted from authored_at"
+      - name: day_of_week
+        description: "Day of week (1=Sunday, 7=Saturday) extracted from authored_at"
+      - name: iso_week
+        description: "ISO week number extracted from authored_at"
+      - name: month
+        description: "Month number extracted from authored_at"
+      - name: year
+        description: "Year extracted from authored_at"
+
+  - name: stg_pull_requests
+    description: "Cleaned and deduplicated pull requests with merge metrics"
+    columns:
+      - name: pr_id
+        description: "Surrogate key combining repo_full_name and pr_number"
+        tests:
+          - unique
+          - not_null
+      - name: pr_number
+        description: "Pull request number within the repository"
+        tests:
+          - not_null
+      - name: repo_full_name
+        description: "Full repository name (owner/repo)"
+        tests:
+          - not_null
+      - name: pr_title
+        description: "Pull request title"
+      - name: state
+        description: "Normalized PR state"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['open', 'closed', 'merged']
+      - name: author_login
+        description: "GitHub login of PR author"
+      - name: created_at
+        description: "Timestamp when the PR was created"
+        tests:
+          - not_null
+      - name: updated_at
+        description: "Timestamp when the PR was last updated"
+      - name: merged_at
+        description: "Timestamp when the PR was merged (null if not merged)"
+      - name: merge_commit_sha
+        description: "SHA of the merge commit (null if not merged)"
+      - name: is_merged
+        description: "Boolean indicating whether the PR has been merged"
+        tests:
+          - not_null
+      - name: time_to_merge_hours
+        description: "Hours between PR creation and merge (null if not merged)"
+
+  - name: stg_reviews
+    description: "Cleaned and deduplicated PR reviews linked to pull requests"
+    columns:
+      - name: review_id
+        description: "Unique review identifier"
+        tests:
+          - unique
+          - not_null
+      - name: repo_full_name
+        description: "Full repository name (owner/repo)"
+        tests:
+          - not_null
+      - name: pr_number
+        description: "Pull request number this review belongs to"
+        tests:
+          - not_null
+      - name: pr_id
+        description: "Surrogate key linking to stg_pull_requests"
+        tests:
+          - not_null
+      - name: reviewer_login
+        description: "GitHub login of the reviewer"
+      - name: review_state
+        description: "Review decision state"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['APPROVED', 'CHANGES_REQUESTED', 'COMMENTED', 'DISMISSED']
+      - name: submitted_at
+        description: "Timestamp when the review was submitted"
+        tests:
+          - not_null
+      - name: review_body
+        description: "Review comment body text"
+
+  - name: stg_repositories
+    description: "Latest snapshot of repository metadata"
+    columns:
+      - name: repository_id
+        description: "Unique repository identifier from GitHub"
+        tests:
+          - unique
+          - not_null
+      - name: repository_name
+        description: "Short repository name"
+        tests:
+          - not_null
+      - name: full_name
+        description: "Full repository name (owner/repo)"
+        tests:
+          - unique
+          - not_null
+      - name: owner
+        description: "Repository owner extracted from full_name"
+        tests:
+          - not_null
+      - name: owner_login
+        description: "Repository owner login from GitHub API"
+      - name: primary_language
+        description: "Primary programming language of the repository"
+      - name: created_at
+        description: "Timestamp when the repository was created"
+      - name: updated_at
+        description: "Timestamp when the repository was last updated"
+      - name: visibility
+        description: "Repository visibility (public or private)"
+        tests:
+          - accepted_values:
+              values: ['public', 'private']
+      - name: is_fork
+        description: "Whether the repository is a fork"
+        tests:
+          - not_null
+      - name: stargazers_count
+        description: "Number of stars on the repository"
+
+  - name: stg_languages
+    description: "Language byte counts per repository with calculated percentages"
+    columns:
+      - name: repo_full_name
+        description: "Full repository name (owner/repo)"
+        tests:
+          - not_null
+      - name: language_name
+        description: "Programming language name"
+        tests:
+          - not_null
+      - name: byte_count
+        description: "Number of bytes of code in this language"
+        tests:
+          - not_null
+      - name: language_percentage
+        description: "Proportion of this language within the repository (0 to 1)"
