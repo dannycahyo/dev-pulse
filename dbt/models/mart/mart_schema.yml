@@ -1,0 +1,234 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Calendar dimension table generated from a date spine (2020-01-01 to CURRENT_DATE + 365 days). Provides day, week, month, quarter, and year attributes for joining with fact tables."
+    columns:
+      - name: date_key
+        description: "Surrogate key in YYYYMMDD integer format"
+        tests:
+          - unique
+          - not_null
+      - name: full_date
+        description: "Calendar date value"
+        tests:
+          - unique
+          - not_null
+      - name: day_of_week
+        description: "Day of week (1=Sunday, 7=Saturday)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6, 7]
+      - name: day_name
+        description: "Full name of the day (e.g., Monday, Tuesday)"
+        tests:
+          - not_null
+      - name: day_of_month
+        description: "Day of the month (1-31)"
+        tests:
+          - not_null
+      - name: iso_week_number
+        description: "ISO week number of the year (1-53)"
+        tests:
+          - not_null
+      - name: month_number
+        description: "Month number (1-12)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      - name: month_name
+        description: "Full name of the month (e.g., January, February)"
+        tests:
+          - not_null
+      - name: quarter
+        description: "Quarter of the year (1-4)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4]
+      - name: year
+        description: "Calendar year"
+        tests:
+          - not_null
+      - name: is_weekend
+        description: "Boolean flag indicating whether the date falls on a weekend (Saturday or Sunday)"
+        tests:
+          - not_null
+
+  - name: dim_repository
+    description: "Repository dimension containing GitHub repository metadata. Uses FARM_FINGERPRINT on repo_full_name as surrogate key."
+    columns:
+      - name: repo_id
+        description: "Surrogate key generated via FARM_FINGERPRINT(repo_full_name)"
+        tests:
+          - unique
+          - not_null
+      - name: repo_name
+        description: "Short repository name"
+        tests:
+          - not_null
+      - name: repo_full_name
+        description: "Full repository name in owner/repo format"
+        tests:
+          - unique
+          - not_null
+      - name: owner
+        description: "Repository owner (GitHub user or organization)"
+        tests:
+          - not_null
+      - name: primary_language
+        description: "Primary programming language of the repository"
+      - name: created_at
+        description: "Timestamp when the repository was created on GitHub"
+      - name: visibility
+        description: "Repository visibility setting"
+        tests:
+          - accepted_values:
+              values: ['public', 'private']
+      - name: is_fork
+        description: "Boolean flag indicating whether the repository is a fork"
+        tests:
+          - not_null
+      - name: stargazers_count
+        description: "Number of stars on the repository"
+
+  - name: fct_commits
+    description: "Fact table with one row per commit. Joins to dim_repository and dim_date for analytical slicing. Materialized incrementally using merge on commit_sha."
+    columns:
+      - name: commit_sha
+        description: "Unique commit SHA hash — primary key"
+        tests:
+          - unique
+          - not_null
+      - name: repo_id
+        description: "Foreign key to dim_repository"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_repository')
+              field: repo_id
+      - name: date_key
+        description: "Foreign key to dim_date based on commit date"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: committed_at
+        description: "Timestamp when the commit was authored"
+        tests:
+          - not_null
+      - name: hour_of_day
+        description: "Hour of day (0-23) when the commit was made"
+      - name: day_of_week
+        description: "Day of week (1=Sunday, 7=Saturday) when the commit was made"
+      - name: author_name
+        description: "Name of the commit author"
+      - name: author_email
+        description: "Email of the commit author"
+      - name: message_first_line
+        description: "First 100 characters of the commit message"
+      - name: additions
+        description: "Number of lines added in this commit"
+      - name: deletions
+        description: "Number of lines deleted in this commit"
+      - name: changed_files
+        description: "Number of files changed in this commit"
+      - name: total_changes
+        description: "Total lines changed (additions + deletions)"
+
+  - name: fct_pull_requests
+    description: "Fact table with one row per pull request. Joins to dim_repository and dim_date for both created and merged dates. Materialized incrementally using merge on pr_key."
+    columns:
+      - name: pr_key
+        description: "Surrogate key composed of repo_full_name#pr_number"
+        tests:
+          - unique
+          - not_null
+      - name: repo_id
+        description: "Foreign key to dim_repository"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_repository')
+              field: repo_id
+      - name: pr_number
+        description: "Pull request number within the repository"
+        tests:
+          - not_null
+      - name: title
+        description: "Pull request title"
+      - name: state
+        description: "Normalized PR state"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['open', 'closed', 'merged']
+      - name: is_merged
+        description: "Boolean flag indicating whether the PR has been merged"
+        tests:
+          - not_null
+      - name: created_at
+        description: "Timestamp when the PR was created"
+        tests:
+          - not_null
+      - name: created_date_key
+        description: "Foreign key to dim_date for the PR creation date"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: merged_at
+        description: "Timestamp when the PR was merged (null if not merged)"
+      - name: merged_date_key
+        description: "Foreign key to dim_date for the PR merge date (null if not merged)"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: time_to_merge_hours
+        description: "Hours elapsed between PR creation and merge (null if not merged)"
+      - name: user_login
+        description: "GitHub login of the PR author"
+
+  - name: fct_reviews
+    description: "Fact table with one row per pull request review. Joins to dim_repository, fct_pull_requests, and dim_date. Materialized incrementally using merge on review_id."
+    columns:
+      - name: review_id
+        description: "Unique review identifier — primary key"
+        tests:
+          - unique
+          - not_null
+      - name: repo_id
+        description: "Foreign key to dim_repository"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_repository')
+              field: repo_id
+      - name: pr_key
+        description: "Foreign key to fct_pull_requests"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_pull_requests')
+              field: pr_key
+      - name: reviewer_login
+        description: "GitHub login of the reviewer"
+      - name: review_state
+        description: "Review decision state"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['APPROVED', 'CHANGES_REQUESTED', 'COMMENTED', 'DISMISSED']
+      - name: submitted_at
+        description: "Timestamp when the review was submitted"
+        tests:
+          - not_null
+      - name: date_key
+        description: "Foreign key to dim_date based on review submission date"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
