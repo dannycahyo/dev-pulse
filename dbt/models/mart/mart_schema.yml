@@ -232,3 +232,300 @@ models:
           - relationships:
               to: ref('dim_date')
               field: date_key
+
+  - name: agg_daily_activity
+    description: "Daily activity rollup with one row per calendar date. LEFT JOINs from dim_date ensure all dates appear, including zero-activity days. Includes rolling commit windows and streak calculations. Optimized for Metabase time-series dashboards."
+    columns:
+      - name: full_date
+        description: "Calendar date"
+        tests:
+          - unique
+          - not_null
+      - name: date_key
+        description: "Surrogate key in YYYYMMDD format, foreign key to dim_date"
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: day_of_week
+        description: "Day of week (1=Sunday, 7=Saturday)"
+        tests:
+          - not_null
+      - name: day_name
+        description: "Full name of the day (e.g., Monday)"
+        tests:
+          - not_null
+      - name: iso_week_number
+        description: "ISO week number of the year"
+        tests:
+          - not_null
+      - name: month_number
+        description: "Month number (1-12)"
+        tests:
+          - not_null
+      - name: year
+        description: "Calendar year"
+        tests:
+          - not_null
+      - name: is_weekend
+        description: "Boolean flag for weekend days"
+        tests:
+          - not_null
+      - name: commit_count
+        description: "Number of commits on this date"
+        tests:
+          - not_null
+      - name: pr_opened_count
+        description: "Number of pull requests opened on this date"
+        tests:
+          - not_null
+      - name: pr_merged_count
+        description: "Number of pull requests merged on this date"
+        tests:
+          - not_null
+      - name: review_count
+        description: "Number of PR reviews submitted on this date"
+        tests:
+          - not_null
+      - name: total_additions
+        description: "Total lines added across all commits on this date"
+        tests:
+          - not_null
+      - name: total_deletions
+        description: "Total lines deleted across all commits on this date"
+        tests:
+          - not_null
+      - name: total_files_changed
+        description: "Total files changed across all commits on this date"
+        tests:
+          - not_null
+      - name: active_repo_count
+        description: "Count of distinct repositories with any activity (commits, PRs, reviews) on this date"
+        tests:
+          - not_null
+      - name: rolling_7d_commits
+        description: "Sum of commits over the trailing 7-day window (current day + 6 preceding)"
+        tests:
+          - not_null
+      - name: rolling_30d_commits
+        description: "Sum of commits over the trailing 30-day window (current day + 29 preceding)"
+        tests:
+          - not_null
+      - name: current_streak_days
+        description: "Number of consecutive days with at least one commit, counting backwards from this date. Zero if no commits on this date."
+        tests:
+          - not_null
+
+  - name: agg_weekly_activity
+    description: "Weekly activity rollup with one row per ISO week. Includes all calendar weeks up to the current date, with zero-filled weeks for periods without activity. Provides week-over-week change metrics for trend analysis."
+    columns:
+      - name: year
+        description: "Calendar year"
+        tests:
+          - not_null
+      - name: iso_week_number
+        description: "ISO week number (1-53)"
+        tests:
+          - not_null
+      - name: week_start_date
+        description: "First date of the ISO week"
+        tests:
+          - not_null
+      - name: commit_count
+        description: "Total commits during this week"
+        tests:
+          - not_null
+      - name: pr_opened_count
+        description: "Total pull requests opened during this week"
+        tests:
+          - not_null
+      - name: pr_merged_count
+        description: "Total pull requests merged during this week"
+        tests:
+          - not_null
+      - name: review_count
+        description: "Total PR reviews submitted during this week"
+        tests:
+          - not_null
+      - name: total_additions
+        description: "Total lines added across all commits this week"
+        tests:
+          - not_null
+      - name: total_deletions
+        description: "Total lines deleted across all commits this week"
+        tests:
+          - not_null
+      - name: total_files_changed
+        description: "Total files changed across all commits this week"
+        tests:
+          - not_null
+      - name: active_repo_count
+        description: "Count of distinct repositories with activity this week"
+        tests:
+          - not_null
+      - name: week_over_week_commit_change
+        description: "Percentage change in commit count compared to the previous week. NULL for the first week."
+
+  - name: agg_monthly_activity
+    description: "Monthly activity rollup with one row per calendar month. Includes all months up to the current date with zero-filled months. Provides month-over-month change and average daily commit metrics."
+    columns:
+      - name: year
+        description: "Calendar year"
+        tests:
+          - not_null
+      - name: month_number
+        description: "Month number (1-12)"
+        tests:
+          - not_null
+      - name: month_name
+        description: "Full name of the month (e.g., January)"
+        tests:
+          - not_null
+      - name: commit_count
+        description: "Total commits during this month"
+        tests:
+          - not_null
+      - name: pr_opened_count
+        description: "Total pull requests opened during this month"
+        tests:
+          - not_null
+      - name: pr_merged_count
+        description: "Total pull requests merged during this month"
+        tests:
+          - not_null
+      - name: review_count
+        description: "Total PR reviews submitted during this month"
+        tests:
+          - not_null
+      - name: total_additions
+        description: "Total lines added across all commits this month"
+        tests:
+          - not_null
+      - name: total_deletions
+        description: "Total lines deleted across all commits this month"
+        tests:
+          - not_null
+      - name: total_files_changed
+        description: "Total files changed across all commits this month"
+        tests:
+          - not_null
+      - name: active_repo_count
+        description: "Count of distinct repositories with activity this month"
+        tests:
+          - not_null
+      - name: month_over_month_commit_change
+        description: "Percentage change in commit count compared to the previous month. NULL for the first month."
+      - name: avg_daily_commits
+        description: "Average number of commits per day within this month"
+        tests:
+          - not_null
+
+  - name: agg_hourly_heatmap
+    description: "Commit activity heatmap with one row per (day_of_week, hour_of_day) combination — exactly 168 rows. Designed for Metabase heatmap visualization of coding patterns."
+    columns:
+      - name: day_of_week
+        description: "Day of week (1=Sunday, 7=Saturday)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6, 7]
+      - name: day_name
+        description: "Full name of the day (e.g., Monday)"
+        tests:
+          - not_null
+      - name: hour_of_day
+        description: "Hour of day (0-23)"
+        tests:
+          - not_null
+      - name: total_commits
+        description: "Total number of commits in this day-hour slot across all time"
+        tests:
+          - not_null
+      - name: avg_commits_per_week
+        description: "Average commits per week for this day-hour slot"
+        tests:
+          - not_null
+      - name: max_single_day_commits
+        description: "Maximum number of commits in a single calendar day for this day-hour slot"
+        tests:
+          - not_null
+
+  - name: agg_language_usage
+    description: "Language usage metrics with one row per (language, month). Tracks commit activity and byte counts by primary programming language. Supports the Language Analytics dashboard in Metabase."
+    columns:
+      - name: year
+        description: "Calendar year"
+        tests:
+          - not_null
+      - name: month_number
+        description: "Month number (1-12)"
+        tests:
+          - not_null
+      - name: language
+        description: "Primary programming language"
+        tests:
+          - not_null
+      - name: total_bytes
+        description: "Total bytes of code in this language across all active repositories"
+        tests:
+          - not_null
+      - name: repo_count
+        description: "Number of distinct repositories with this primary language that had commits"
+        tests:
+          - not_null
+      - name: commit_count
+        description: "Number of commits to repositories where this is the primary language"
+        tests:
+          - not_null
+      - name: percentage_of_total_bytes
+        description: "This language's byte count as a percentage of total bytes across all languages for the month"
+
+  - name: agg_repo_activity
+    description: "Repository activity metrics with one row per (repo_full_name, month). Provides commit, PR, and contributor metrics enriched with repository metadata from dim_repository. Supports the Repository Focus dashboard."
+    columns:
+      - name: repo_full_name
+        description: "Full repository name in owner/repo format"
+        tests:
+          - not_null
+      - name: repo_name
+        description: "Short repository name"
+        tests:
+          - not_null
+      - name: primary_language
+        description: "Primary programming language of the repository"
+      - name: stargazers_count
+        description: "Number of stars on the repository"
+      - name: visibility
+        description: "Repository visibility (public or private)"
+      - name: is_fork
+        description: "Whether the repository is a fork"
+      - name: year
+        description: "Calendar year"
+        tests:
+          - not_null
+      - name: month_number
+        description: "Month number (1-12)"
+        tests:
+          - not_null
+      - name: commit_count
+        description: "Number of commits in this repository during the month"
+        tests:
+          - not_null
+      - name: pr_count
+        description: "Number of pull requests opened in this repository during the month"
+        tests:
+          - not_null
+      - name: additions
+        description: "Total lines added in this repository during the month"
+        tests:
+          - not_null
+      - name: deletions
+        description: "Total lines deleted in this repository during the month"
+        tests:
+          - not_null
+      - name: unique_contributors
+        description: "Number of distinct commit authors in this repository during the month"
+        tests:
+          - not_null
